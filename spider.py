@@ -2,6 +2,8 @@ import requests
 import re
 import pickle
 import os
+import jieba
+import webbrowser as web
 from multiprocessing import Pool
 import time
 import tkinter as tk
@@ -54,6 +56,10 @@ class TaxFileSpider(object):
             self.title_list.append(item[1])
             self.tag_list.append(item[2])
 
+    # 打开浏览器访问网页
+    def open_web(self, url):
+        web.open_new_tab(url=url)
+
     def show_url_list(self):
         for url in self.url_list:
             print(url)
@@ -68,7 +74,6 @@ class TaxFileSpider(object):
             print(tag)
 
     def search(self, keyword):
-        print('搜索结果:')
         for index, title in enumerate(self.title_list):
             if title.find(str(keyword)) != -1 or self.tag_list[index].find(str(keyword)) != -1:
                 print('文件索引: %s'%index)
@@ -77,6 +82,17 @@ class TaxFileSpider(object):
                 print('来源网址: %s'%self.url_list[index])
                 print(50*'-')
 
+    # 模糊搜索
+    def ambiguous_search(self, keyword):
+        keyword_list = self.cut_for_search(keyword)
+        self.search(keyword)
+        for keyword in keyword_list:
+            if keyword:
+                self.search(keyword)
+
+    # 用jieba分割词,用于模糊搜索
+    def cut_for_search(self, keyword):
+        return [i for i in jieba.cut_for_search(keyword)]
 
     def download(self, index):
         headers = {'User-Agent':self.user_agent,
@@ -181,17 +197,24 @@ if __name__ == '__main__':
     spider.init()
     while True:
         keyword = input('请输入文件的关键字:')
-        if keyword == 'ALL':
-            spider.show_title_list()
-            print(25 * '#' + '快乐的分割线' + 25 * '#')
-            continue
+        print('搜索结果:')
+        if keyword:
+            if keyword == 'ALL':
+                spider.show_title_list()
+                print(40 * '#' + '快乐的分割线' + 40 * '#')
+                continue
+            elif keyword[0]=='M':
+                spider.ambiguous_search(keyword=keyword)
+            else:
+                spider.search(keyword=keyword)
         else:
-            spider.search(keyword=keyword)
-        indexs = input('输入需要下载文件的索引号(多个文件以英文逗号隔开):')
+            print(40 * '#' + '快乐的分割线' + 40 * '#')
+            continue
+        indexs = input('输入想要查看文件的索引号(多个文件以英文逗号隔开):')
         if indexs:
             if indexs.find(',') != -1:
                 for index in indexs.split(','):
-                    spider.download(index=int(index))
+                    spider.open_web(url=spider.url_list[int(index)])
             else:
-                spider.download(index=int(indexs))
-        print(25*'#'+'快乐的分割线'+25*'#')
+                spider.open_web(url=spider.url_list[int(indexs)])
+        print(40*'#'+'快乐的分割线'+40*'#')
