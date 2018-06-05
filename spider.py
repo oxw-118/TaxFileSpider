@@ -47,7 +47,7 @@ class TaxFileSpider(object):
     def parse(self):
         self.response.encoding = 'utf-8'
         content = self.response.text
-        artical_data = re.findall('<dd>.*?href="(.*?)".*?title="(.*?)"><span.*?>[(.*?)]</span>]'
+        artical_data = re.findall('<dd>.*?href="(.*?)".*?title="(.*?)"><span.*?>(.*?)</span>'
                                   , content, re.S)
         for item in artical_data:
             self.url_list.append(self.base_url+item[0][6:])
@@ -95,10 +95,10 @@ class TaxFileSpider(object):
                 if not content:
                     print('获取文章信息错误~请手动查看文章')
             except Exception as e:
-                print('下载出现错误!')
+                print('下载出现错误!~请手动查看文章')
                 print('错误信息: %s'%repr(e))
                 return
-            artical_head = '题目: %s\n发表时间: %s\n作者: %s\n文章来源: %s'%(title, pubdate, mediaid, url)       # 构造文件开头
+            artical_head = '题目: %s\n标签: %s\n发表时间: %s\n作者: %s\n文章来源: %s'%(title, self.tag_list[index], pubdate, mediaid, url)       # 构造文件开头
             pretty_content = self.content_prettify(content=content)
             self.save(title=title, artical_head=artical_head, content=pretty_content)
         else:
@@ -108,11 +108,9 @@ class TaxFileSpider(object):
     def content_prettify(self, content):
         content = content.replace('&ldquo;', '"')
         content = content.replace('&rdquo;', '"')
+        content = content.replace('&mdash;', '-')
+        content = content.replace('&nbsp;', ' ')
         content = content.replace('<br />', '')
-        paragraphs = content.split()
-        content = None
-        for paragraph in paragraphs:
-            content = '    '+content+'\n'
         return content
 
     def is_exists(self, path):
@@ -130,8 +128,11 @@ class TaxFileSpider(object):
             self.save_directory = GUI_get_save_directory()
         save_path = self.save_directory + '/%s.txt'%title
         with open(save_path, 'w') as fw:
-            fw.write(artical_head+'\n\n')
-            fw.write(content)
+            try:
+                fw.write(artical_head+'\n\n')
+                fw.write(content)
+            except:
+                print('%s |下载失败!请手动访问')
         print('已成功保存至 %s'%save_path)
 
     def read_pickle(self, path):
@@ -171,12 +172,17 @@ if __name__ == '__main__':
     spider.init()
     while True:
         keyword = input('请输入文件的关键字:')
-        spider.search(keyword=keyword)
+        if keyword == 'ALL':
+            spider.show_title_list()
+            print(25 * '#' + '快乐的分割线' + 25 * '#')
+            continue
+        else:
+            spider.search(keyword=keyword)
         indexs = input('输入需要下载文件的索引号(多个文件以英文逗号隔开):')
         if indexs:
             if indexs.find(',') != -1:
                 for index in indexs.split(','):
-                    spider.download(index=index)
+                    spider.download(index=int(index))
             else:
-                spider.download(index=indexs)
+                spider.download(index=int(indexs))
         print(25*'#'+'快乐的分割线'+25*'#')
