@@ -83,7 +83,14 @@ class TaxFileSpider(object):
                    'Host': 'www.chinatax.gov.cn',
                    'Referer': 'http: // www.chinatax.gov.cn / n810341 / n810755 / index.html'
         }
-        url = self.url_list[index]
+        if index < len(self.url_list):
+            url = self.url_list[index]
+        else:
+            while index >= len(self.url_list):
+                index = input('文件索引号有误,请重新输入:')
+                if not index:
+                    return
+                index = int(index)
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             response.encoding = 'utf-8'
@@ -133,6 +140,8 @@ class TaxFileSpider(object):
                 fw.write(content)
             except:
                 print('%s |下载失败!请手动访问')
+                os.remove(save_path)
+                return
         print('已成功保存至 %s'%save_path)
 
     def read_pickle(self, path):
