@@ -232,5 +232,8 @@ if __name__ == '__main__':
                 for index in indexs.split(','):
                     spider.open_web(url=spider.url_list[int(index)])
             else:
-                spider.open_web(url=spider.url_list[int(indexs)])
+                try:
+                    spider.open_web(url=spider.url_list[int(indexs)])
+                except Exception as e:
+                    print('发生错误!\n错误信息: %s'%repr(e))
         print(40*'#'+'快乐的分割线'+40*'#')
