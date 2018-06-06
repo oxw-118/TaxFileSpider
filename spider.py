@@ -29,6 +29,8 @@ class TaxFileSpider(object):
         self.url_list = []
         self.title_list = []
         self.tag_list = []
+        self.result_indexs = []
+        self.fobidden_search_list = ['税','M','的','号']    # 模糊搜索跳过的关键字,提高准确度
         self.save_directory = None
         self.urls_path = 'urls.txt'
         self.tags_path = 'tags.txt'
@@ -75,24 +77,26 @@ class TaxFileSpider(object):
 
     def search(self, keyword):
         for index, title in enumerate(self.title_list):
-            if title.find(str(keyword)) != -1 or self.tag_list[index].find(str(keyword)) != -1:
+            if (title.find(str(keyword)) != -1 or self.tag_list[index].find(str(keyword)) != -1) and index not in self.result_indexs:
                 print('文件索引: %s'%index)
                 print('文件题目: %s'%title)
                 print('文件标签: %s'%self.tag_list[index])
                 print('来源网址: %s'%self.url_list[index])
                 print(50*'-')
+                self.result_indexs.append(index)
 
     # 模糊搜索
     def ambiguous_search(self, keyword):
         keyword_list = self.cut_for_search(keyword)
+        self.result_indexs = []
         self.search(keyword)
         for keyword in keyword_list:
-            if keyword:
+            if keyword not in self.fobidden_search_list:
                 self.search(keyword)
 
     # 用jieba分割词,用于模糊搜索
     def cut_for_search(self, keyword):
-        return [i for i in jieba.cut_for_search(keyword)]
+        return [i for i in jieba.cut_for_search(keyword) if i]
 
     def download(self, index):
         headers = {'User-Agent':self.user_agent,
@@ -197,6 +201,7 @@ if __name__ == '__main__':
     spider.init()
     while True:
         keyword = input('请输入文件的关键字:')
+        print('正在努力搜索...')
         print('搜索结果:')
         if keyword:
             if keyword == 'ALL':
@@ -205,11 +210,22 @@ if __name__ == '__main__':
                 continue
             elif keyword[0]=='M':
                 spider.ambiguous_search(keyword=keyword)
+                print('含有关键字的文件索引号: ', end='')
+                for index in spider.result_indexs:
+                    print(index, ',',end='')
+                print()
+                print('-'*50)
             else:
                 spider.search(keyword=keyword)
+                print('含有关键字的文件索引号: ', end='')
+                for index in spider.result_indexs:
+                    print(index, ',',end='')
+                print()
+                print('-'*50)
         else:
             print(40 * '#' + '快乐的分割线' + 40 * '#')
             continue
+        spider.result_indexs=[]
         indexs = input('输入想要查看文件的索引号(多个文件以英文逗号隔开):')
         if indexs:
             if indexs.find(',') != -1:
