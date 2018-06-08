@@ -193,47 +193,60 @@ class TaxFileSpider(object):
             self.url_list = self.read_pickle(self.urls_path)
             self.tag_list = self.read_pickle(self.tags_path)
         print("初始化完成!")
-        print("用时: %s秒"%(time.time()-time1))
+        print("用时: %s秒\n\n"%(time.time()-time1))
+
+    def shell(self, command):
+        command_list = command.split()
+        try:
+            if command_list[0] in ['?', 'help', '？']:
+                print('所有指令(输入指令时用空格代替\'+\'):')
+                print('           |   指令                  |                   功能   |')
+                print('           |----------------------------------------------------|')
+                print('           |  help/?                 |                    帮助  |')
+                print('           |  a/all                  |                所有文件  |')
+                print('           |  s/S+关键词             |                精确搜索  |')
+                print('           |  m/M+关键词             |                模糊搜索  |')
+                print('           |  o/O/open+文件索引号    |            用浏览器打开  |')
+                print('           |  update/ud              |            更新本地缓存  |')
+            elif command_list[0] in ['a', 'all']:
+                self.show_title_list()
+            elif command_list[0] in ['s', 'S']:
+                self.search(keyword=command_list[1])
+                print('含有关键字的文件索引号:')
+                for index in self.result_indexs:
+                    print(index, ',', end='')
+                print()
+            elif command_list[0] in ['o', 'O', 'open']:
+                for i in range(1, len(command_list)):
+                    self.open_web(url=self.url_list[i])
+            elif command_list[0] in ['m', 'M']:
+                self.ambiguous_search(keyword=command_list[1])
+                print('含有关键字的文件索引号:')
+                for index in self.result_indexs:
+                    print(index, ',', end='')
+                print()
+            elif command_list[0] in ['ud', 'update']:
+                requests_url_list = [REQUEST_URL.format(str(i)) for i in range(1, MAX_PAGE+1)]
+                for url in requests_url_list:
+                    self.get(url=url)
+                if self.response.status_code == 200:
+                    self.to_pickle(self.titles_path, data=self.title_list)
+                    self.to_pickle(self.urls_path, data=self.url_list)
+                    self.to_pickle(self.tags_path, data=self.tag_list)
+                else:
+                    print('哎呀！爬虫被发现啦，请稍后再试~')
+            else:
+                print('您输入的指令有误噢~输入?或者help可以查看所有可以使用的指令')
+        except:
+            print('您输入的指令有误噢~输入?或者help可以查看所有可以使用的指令')
+
 
 if __name__ == '__main__':
     print("因为爬虫请求网页速度很快,容易被封禁,过一段时间就好啦~\n")
     spider = TaxFileSpider()
     spider.init()
     while True:
-        keyword = input('请输入文件的关键字:')
-        print('正在努力搜索...')
-        print('搜索结果:')
-        if keyword:
-            if keyword == 'ALL':
-                spider.show_title_list()
-                print(40 * '#' + '快乐的分割线' + 40 * '#')
-                continue
-            elif keyword[0]=='M':
-                spider.ambiguous_search(keyword=keyword)
-                print('含有关键字的文件索引号: ', end='')
-                for index in spider.result_indexs:
-                    print(index, ',',end='')
-                print()
-                print('-'*50)
-            else:
-                spider.search(keyword=keyword)
-                print('含有关键字的文件索引号: ', end='')
-                for index in spider.result_indexs:
-                    print(index, ',',end='')
-                print()
-                print('-'*50)
-        else:
-            print(40 * '#' + '快乐的分割线' + 40 * '#')
-            continue
-        spider.result_indexs=[]
-        indexs = input('输入想要查看文件的索引号(多个文件以英文逗号隔开):')
-        if indexs:
-            if indexs.find(',') != -1:
-                for index in indexs.split(','):
-                    spider.open_web(url=spider.url_list[int(index)])
-            else:
-                try:
-                    spider.open_web(url=spider.url_list[int(indexs)])
-                except Exception as e:
-                    print('发生错误!\n错误信息: %s'%repr(e))
-        print(40*'#'+'快乐的分割线'+40*'#')
+        command = input('请输入指令>')
+        if command:
+            spider.shell(command=command)
+
