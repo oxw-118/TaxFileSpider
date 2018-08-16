@@ -30,7 +30,7 @@ class TaxFileSpider(object):
         self.title_list = []
         self.tag_list = []
         self.result_indexs = []
-        self.fobidden_search_list = ['税','M','的','号']    # 模糊搜索跳过的关键字,提高准确度
+        self.fobidden_search_list = ['税','的','号']    # 模糊搜索跳过的关键字,提高准确度
         self.save_directory = None
         self.urls_path = 'urls.txt'
         self.tags_path = 'tags.txt'
@@ -45,6 +45,7 @@ class TaxFileSpider(object):
         if self.response.status_code == 200:
             self.parse()
             print('%s ----- down'%url)
+            time.sleep(3)
         else:
             print("status_code:%s  网页解析错误请稍后再试"%self.response.status_code)
 
@@ -76,6 +77,7 @@ class TaxFileSpider(object):
             print(tag)
 
     def search(self, keyword):
+        self.result_indexs = []
         for index, title in enumerate(self.title_list):
             if (title.find(str(keyword)) != -1 or self.tag_list[index].find(str(keyword)) != -1) and index not in self.result_indexs:
                 print('文件索引: %s'%index)
@@ -89,7 +91,6 @@ class TaxFileSpider(object):
     def ambiguous_search(self, keyword):
         keyword_list = self.cut_for_search(keyword)
         self.result_indexs = []
-        self.search(keyword)
         for keyword in keyword_list:
             if keyword not in self.fobidden_search_list:
                 self.search(keyword)
@@ -150,20 +151,6 @@ class TaxFileSpider(object):
         with open(path, 'wb') as f:
             pickle.dump(data, f)
 
-    def save(self, title, artical_head, content):
-        if not self.save_directory:
-            self.save_directory = GUI_get_save_directory()
-        save_path = self.save_directory + '/%s.txt'%title
-        with open(save_path, 'w') as fw:
-            try:
-                fw.write(artical_head+'\n\n')
-                fw.write(content)
-            except:
-                print('%s |下载失败!请手动访问')
-                os.remove(save_path)
-                return
-        print('已成功保存至 %s'%save_path)
-
     def read_pickle(self, path):
         with open(path, 'rb') as f:
             return pickle.load(f)
@@ -180,6 +167,7 @@ class TaxFileSpider(object):
             else:
                 for url in requests_url_list:
                     self.get(url=url)
+                    time.sleep(1)
             if self.response.status_code == 200:
                 self.to_pickle(self.titles_path, data=self.title_list)
                 self.to_pickle(self.urls_path, data=self.url_list)
@@ -218,7 +206,7 @@ class TaxFileSpider(object):
                 print()
             elif command_list[0] in ['o', 'O', 'open']:
                 for i in range(1, len(command_list)):
-                    self.open_web(url=self.url_list[i])
+                    self.open_web(url=self.url_list[int(command_list[i])])
             elif command_list[0] in ['m', 'M']:
                 self.ambiguous_search(keyword=command_list[1])
                 print('含有关键字的文件索引号:')
